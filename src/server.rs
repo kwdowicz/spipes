@@ -6,6 +6,7 @@ use crate::broker_service::broker_service_server::{BrokerService, BrokerServiceS
 use crate::broker_service::{CreateTopicRequest, CreateTopicResponse, SubscribeRequest, SubscribeResponse};
 
 const BROKER_STATE_FILE: &str = "broker_state.bin";
+const SERVER_ADDR: &str = "127.0.0.1:5005";
 
 #[derive(Debug, Default)]
 pub struct BrokerServiceImpl {
@@ -14,10 +15,7 @@ pub struct BrokerServiceImpl {
 
 #[tonic::async_trait]
 impl BrokerService for BrokerServiceImpl {
-    async fn create_topic(
-        &self,
-        request: Request<CreateTopicRequest>,
-    ) -> Result<Response<CreateTopicResponse>, Status> {
+    async fn create_topic(&self,request: Request<CreateTopicRequest>,) -> Result<Response<CreateTopicResponse>, Status> {
         let req = request.into_inner();
         let mut broker = self.broker.lock().unwrap();
 
@@ -32,10 +30,7 @@ impl BrokerService for BrokerServiceImpl {
         }
     }
 
-    async fn subscribe(
-        &self,
-        request: Request<SubscribeRequest>,
-    ) -> Result<Response<SubscribeResponse>, Status> {
+    async fn subscribe(&self,request: Request<SubscribeRequest>,) -> Result<Response<SubscribeResponse>, Status> {
         let req = request.into_inner();
         let mut broker = self.broker.lock().unwrap();
 
@@ -55,7 +50,7 @@ impl BrokerService for BrokerServiceImpl {
 }
 
 pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
-    let addr = "127.0.0.1:5005".parse()?;
+    let addr = SERVER_ADDR.parse()?;
     let broker = match Broker::load_from_file(BROKER_STATE_FILE) {
         Ok(broker) => {
             println!("Broker: {:#?}", broker.clone());
