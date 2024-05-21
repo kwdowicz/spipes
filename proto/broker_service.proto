@@ -23,3 +23,12 @@ message SubscribeRequest {
 message SubscribeResponse {
     string message = 1;
 }
+
+message Topic {
+    string name = 1;
+    repeated string subscribers = 2;
+}
+
+message Broker {
+    repeated Topic topics = 1;
+}

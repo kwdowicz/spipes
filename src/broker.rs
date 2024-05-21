@@ -41,6 +41,16 @@ impl Broker {
             None => Err(BrokerError::TopicNotFound(topic_name.to_string())),
         }
     }
+
+    pub fn unsubscribe(&mut self, topic_name: &str, client_id: &str) -> Result<(), BrokerError> {
+        match self.topics.get_mut(topic_name) {
+            Some(topic) => {
+                topic.subscribers.remove(client_id);
+                Ok(())
+            }
+            None => Err(BrokerError::TopicNotFound(topic_name.to_string())),
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -92,6 +102,50 @@ mod tests {
             .unwrap()
             .subscribers
             .contains("client1"));
+    }
+
+    #[test]
+    fn test_subscribe_to_existing_topic_twice() {
+        let mut broker = Broker::new();
+        broker.create_topic("topic1").unwrap();
+        assert!(broker.subscribe("topic1", "client1").is_ok());
+        assert!(broker
+            .topics
+            .get("topic1")
+            .unwrap()
+            .subscribers
+            .contains("client1"));
+        assert!(broker.subscribe("topic1", "client1").is_ok());
+        assert_eq!(broker.topics.get("topic1").unwrap().subscribers.len(), 1);
+    }
+
+    #[test]
+    fn test_unsubscribe_to_existing_topic_subscribed() {
+        let mut broker = Broker::new();
+        broker.create_topic("topic1").unwrap();
+        assert!(broker.subscribe("topic1", "client1").is_ok());
+        assert!(broker
+            .topics
+            .get("topic1")
+            .unwrap()
+            .subscribers
+            .contains("client1"));
+        assert!(broker.unsubscribe("topic1", "client1").is_ok());
+        assert_eq!(broker.topics.get("topic1").unwrap().subscribers.len(), 0);
+    }
+
+    #[test]
+    fn test_unsubscribe_to_existing_topic_not_subscribed() {
+        let mut broker = Broker::new();
+        broker.create_topic("topic1").unwrap();
+        assert!(broker.unsubscribe("topic1", "client1").is_ok());
+    }
+
+    #[test]
+    fn test_unsubscribe_to_non_existing_topic_not_subscribed() {
+        let mut broker = Broker::new();
+        broker.create_topic("topic1").unwrap();
+        assert!(broker.unsubscribe("topic2", "client1").is_err());
     }
 
     #[test]
