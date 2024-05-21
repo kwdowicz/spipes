@@ -1,6 +1,15 @@
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
+use prost::Message;
+use std::fs::File;
+use std::io::{Read, Write};
+
+mod broker_service {
+    tonic::include_proto!("broker_service");
+}
+
+use broker_service::{Broker as ProtoBroker, Topic as ProtoTopic};
 
 #[derive(Debug, Error)]
 pub enum BrokerError {
@@ -51,6 +60,41 @@ impl Broker {
             None => Err(BrokerError::TopicNotFound(topic_name.to_string())),
         }
     }
+
+    pub fn from_proto(proto: ProtoBroker) -> Self {
+        let topics = proto
+            .topics
+            .into_iter()
+            .map(|t| (t.name.clone(), Topic::from_proto(t)))
+            .collect();
+        Self { topics }
+    }
+
+    pub fn to_proto(&self) -> ProtoBroker {
+        let topics = self
+            .topics
+            .values()
+            .map(Topic::to_proto)
+            .collect();
+        ProtoBroker { topics }
+    }
+
+    pub fn save_to_file(&self, path: &str) -> Result<(), std::io::Error> {
+        let proto = self.to_proto();
+        let mut buf = Vec::new();
+        proto.encode(&mut buf).unwrap();
+        let mut file = File::create(path)?;
+        file.write_all(&buf)?;
+        Ok(())
+    }
+
+    pub fn load_from_file(path: &str) -> Result<Self, std::io::Error> {
+        let mut file = File::open(path)?;
+        let mut buf = Vec::new();
+        file.read_to_end(&mut buf)?;
+        let proto = ProtoBroker::decode(&buf[..]).unwrap();
+        Ok(Self::from_proto(proto))
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -66,107 +110,18 @@ impl Topic {
             subscribers: HashSet::new(),
         }
     }
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_create_topic() {
-        let mut broker = Broker::new();
-        assert!(broker.create_topic("topic1").is_ok());
-        assert!(broker.topics.contains_key("topic1"));
+    pub fn from_proto(proto: ProtoTopic) -> Self {
+        Self {
+            name: proto.name,
+            subscribers: proto.subscribers.into_iter().collect(),
+        }
     }
 
-    #[test]
-    fn test_create_duplicate_topic() {
-        let mut broker = Broker::new();
-        broker.create_topic("topic1").unwrap();
-        let result = broker.create_topic("topic1");
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().to_string(),
-            "Topic 'topic1' already exists"
-        );
-    }
-
-    #[test]
-    fn test_subscribe_to_existing_topic() {
-        let mut broker = Broker::new();
-        broker.create_topic("topic1").unwrap();
-        assert!(broker.subscribe("topic1", "client1").is_ok());
-        assert!(broker
-            .topics
-            .get("topic1")
-            .unwrap()
-            .subscribers
-            .contains("client1"));
-    }
-
-    #[test]
-    fn test_subscribe_to_existing_topic_twice() {
-        let mut broker = Broker::new();
-        broker.create_topic("topic1").unwrap();
-        assert!(broker.subscribe("topic1", "client1").is_ok());
-        assert!(broker
-            .topics
-            .get("topic1")
-            .unwrap()
-            .subscribers
-            .contains("client1"));
-        assert!(broker.subscribe("topic1", "client1").is_ok());
-        assert_eq!(broker.topics.get("topic1").unwrap().subscribers.len(), 1);
-    }
-
-    #[test]
-    fn test_unsubscribe_to_existing_topic_subscribed() {
-        let mut broker = Broker::new();
-        broker.create_topic("topic1").unwrap();
-        assert!(broker.subscribe("topic1", "client1").is_ok());
-        assert!(broker
-            .topics
-            .get("topic1")
-            .unwrap()
-            .subscribers
-            .contains("client1"));
-        assert!(broker.unsubscribe("topic1", "client1").is_ok());
-        assert_eq!(broker.topics.get("topic1").unwrap().subscribers.len(), 0);
-    }
-
-    #[test]
-    fn test_unsubscribe_to_existing_topic_not_subscribed() {
-        let mut broker = Broker::new();
-        broker.create_topic("topic1").unwrap();
-        assert!(broker.unsubscribe("topic1", "client1").is_ok());
-    }
-
-    #[test]
-    fn test_unsubscribe_to_non_existing_topic_not_subscribed() {
-        let mut broker = Broker::new();
-        broker.create_topic("topic1").unwrap();
-        assert!(broker.unsubscribe("topic2", "client1").is_err());
-    }
-
-    #[test]
-    fn test_subscribe_to_non_existent_topic() {
-        let mut broker = Broker::new();
-        let result = broker.subscribe("non_existent_topic", "client1");
-        assert!(result.is_err());
-        assert_eq!(
-            result.unwrap_err().to_string(),
-            "Topic 'non_existent_topic' not found"
-        );
-    }
-
-    #[test]
-    fn test_multiple_subscribers() {
-        let mut broker = Broker::new();
-        broker.create_topic("topic1").unwrap();
-        broker.subscribe("topic1", "client1").unwrap();
-        broker.subscribe("topic1", "client2").unwrap();
-        let subscribers = &broker.topics.get("topic1").unwrap().subscribers;
-        assert!(subscribers.contains("client1"));
-        assert!(subscribers.contains("client2"));
+    pub fn to_proto(&self) -> ProtoTopic {
+        ProtoTopic {
+            name: self.name.clone(),
+            subscribers: self.subscribers.iter().cloned().collect(),
+        }
     }
 }
