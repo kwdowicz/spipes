@@ -1,2 +1,80 @@
-/target
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
 *.bin
+
+# C extensions
+*.o
+*.a
+*.dylib
+
+# Compiled Rust files
+*.rlib
+*.rmeta
+
+# Rust specific output
+/target/
+
+# If you're using Cargo (Rust's package manager)
+/Cargo.lock
+.cargo/
+
+# IDEs and editors
+## Visual Studio Code
+.vscode/
+*.code-workspace
+
+## IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+## Eclipse
+.project
+.cproject
+.settings/
+
+## Sublime Text
+*.sublime-workspace
+*.sublime-project
+
+## Emacs
+*~
+\#*\#
+.\#*
+
+## Vim
+*.swp
+*.swo
+*.swn
+\*.un~
+
+## MacOS
+.DS_Store
+
+## Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+*.bak
+
+# Backup files
+*.bak
+*.old
+*.orig
+*.save
+
+# Rust standard library
+/vendor/
