@@ -9,7 +9,7 @@ mod broker_service {
     tonic::include_proto!("broker_service");
 }
 
-use broker_service::{Broker as ProtoBroker, Topic as ProtoTopic};
+use broker_service::{Broker as ProtoBroker, Topic as ProtoTopic, Msg as ProtoMsg};
 
 #[derive(Debug, Error)]
 pub enum BrokerError {
@@ -61,6 +61,16 @@ impl Broker {
         }
     }
 
+    pub fn post(&mut self, topic_name: &str, payload: &str) -> Result<(), BrokerError> {
+        match self.topics.get_mut(topic_name) {
+            Some(topic) => {
+                topic.msgs.push(Msg { payload: payload.to_string() });
+                Ok(())
+            }
+            None => Err(BrokerError::TopicNotFound(topic_name.to_string())),
+        }
+    }
+
     pub fn from_proto(proto: ProtoBroker) -> Self {
         let topics = proto
             .topics
@@ -101,6 +111,7 @@ impl Broker {
 pub struct Topic {
     name: String,
     subscribers: HashSet<String>,
+    msgs: Vec<Msg>,
 }
 
 impl Topic {
@@ -108,6 +119,7 @@ impl Topic {
         Self {
             name: name.to_string(),
             subscribers: HashSet::new(),
+            msgs: Vec::new(),
         }
     }
 
@@ -115,6 +127,7 @@ impl Topic {
         Self {
             name: proto.name,
             subscribers: proto.subscribers.into_iter().collect(),
+            msgs: proto.msgs.into_iter().map(Msg::from_proto).collect(),
         }
     }
 
@@ -122,6 +135,26 @@ impl Topic {
         ProtoTopic {
             name: self.name.clone(),
             subscribers: self.subscribers.iter().cloned().collect(),
+            msgs: self.msgs.iter().map(Msg::to_proto).collect(),
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Msg {
+    payload: String,
+}
+
+impl Msg {
+    pub fn from_proto(proto: ProtoMsg) -> Self {
+        Self {
+            payload: proto.payload,
+        }
+    }
+
+    pub fn to_proto(&self) -> ProtoMsg {
+        ProtoMsg {
+            payload: self.payload.clone(),
         }
     }
 }

@@ -4,7 +4,7 @@ use tonic::{Request, Response, Status};
 use tonic::transport::Server;
 use crate::broker::Broker;
 use crate::broker_service::broker_service_server::{BrokerService, BrokerServiceServer};
-use crate::broker_service::{CreateTopicRequest, CreateTopicResponse, SubscribeRequest, SubscribeResponse};
+use crate::broker_service::{CreateTopicRequest, CreateTopicResponse, SubscribeRequest, SubscribeResponse, UnsubscribeRequest, UnsubscribeResponse, PostRequest, PostResponse};
 use tracing::{info, error};
 
 const BROKER_STATE_FILE: &str = "broker_state.bin";
@@ -42,6 +42,38 @@ impl BrokerService for BrokerServiceImpl {
                 broker.save_to_file(BROKER_STATE_FILE).await.unwrap();
                 Ok(Response::new(SubscribeResponse {
                     message: format!("Client '{}' subscribed to '{}'", req.client_id, req.topic_name),
+                }))
+            }
+            Err(e) => Err(Status::not_found(e.to_string())),
+        }
+    }
+
+    async fn unsubscribe(&self, request: Request<UnsubscribeRequest>) -> Result<Response<UnsubscribeResponse>, Status> {
+        let req = request.into_inner();
+        let mut broker = self.broker.lock().await;
+
+        match broker.unsubscribe(&req.topic_name, &req.client_id) {
+            Ok(_) => {
+                info!("Unsubscription: {:?}", &req);
+                broker.save_to_file(BROKER_STATE_FILE).await.unwrap();
+                Ok(Response::new(UnsubscribeResponse {
+                    message: format!("Client '{}' unsubscribed from '{}'", req.client_id, req.topic_name),
+                }))
+            }
+            Err(e) => Err(Status::not_found(e.to_string())),
+        }
+    }
+
+    async fn post(&self, request: Request<PostRequest>) -> Result<Response<PostResponse>, Status> {
+        let req = request.into_inner();
+        let mut broker = self.broker.lock().await;
+
+        match broker.post(&req.topic_name, &req.payload) {
+            Ok(_) => {
+                info!("Post: {:?}", &req);
+                broker.save_to_file(BROKER_STATE_FILE).await.unwrap();
+                Ok(Response::new(PostResponse {
+                    message: format!("Posted to '{}': '{}'", req.topic_name, req.payload),
                 }))
             }
             Err(e) => Err(Status::not_found(e.to_string())),

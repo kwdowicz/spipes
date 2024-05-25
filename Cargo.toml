@@ -2,6 +2,7 @@
 name = "spipes"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 
 [dependencies]
 thiserror = "1.0.61"
@@ -15,3 +16,6 @@ tracing-appender = "0.2.3"
 
 [build-dependencies]
 tonic-build = "0.11.0"
+
+
+
