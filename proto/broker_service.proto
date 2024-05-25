@@ -35,18 +35,18 @@ message UnsubscribeResponse {
     string message = 1;
 }
 
-message Msg {
+message ProtoMsg {
     string payload = 1;
 }
 
-message Topic {
+message ProtoTopic {
     string name = 1;
     repeated string subscribers = 2;
-    repeated Msg msgs = 3;
+    repeated ProtoMsg msgs = 3;
 }
 
-message Broker {
-    repeated Topic topics = 1;
+message ProtoBroker {
+    repeated ProtoTopic topics = 1;
 }
 
 message PostRequest {

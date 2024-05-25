@@ -1,15 +1,16 @@
+mod broker_service {
+    tonic::include_proto!("broker_service");
+}
+
+use crate::broker_service::ProtoBroker;
+use crate::topic::Topic;
+use crate::msg::Msg;
 use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet};
 use thiserror::Error;
 use prost::Message;
 use std::fs::File;
 use std::io::{Read, Write};
-
-mod broker_service {
-    tonic::include_proto!("broker_service");
-}
-
-use broker_service::{Broker as ProtoBroker, Topic as ProtoTopic, Msg as ProtoMsg};
 
 #[derive(Debug, Error)]
 pub enum BrokerError {
@@ -104,57 +105,5 @@ impl Broker {
         file.read_to_end(&mut buf)?;
         let proto = ProtoBroker::decode(&buf[..]).unwrap();
         Ok(Self::from_proto(proto))
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Topic {
-    name: String,
-    subscribers: HashSet<String>,
-    msgs: Vec<Msg>,
-}
-
-impl Topic {
-    pub fn new(name: &str) -> Self {
-        Self {
-            name: name.to_string(),
-            subscribers: HashSet::new(),
-            msgs: Vec::new(),
-        }
-    }
-
-    pub fn from_proto(proto: ProtoTopic) -> Self {
-        Self {
-            name: proto.name,
-            subscribers: proto.subscribers.into_iter().collect(),
-            msgs: proto.msgs.into_iter().map(Msg::from_proto).collect(),
-        }
-    }
-
-    pub fn to_proto(&self) -> ProtoTopic {
-        ProtoTopic {
-            name: self.name.clone(),
-            subscribers: self.subscribers.iter().cloned().collect(),
-            msgs: self.msgs.iter().map(Msg::to_proto).collect(),
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
-pub struct Msg {
-    payload: String,
-}
-
-impl Msg {
-    pub fn from_proto(proto: ProtoMsg) -> Self {
-        Self {
-            payload: proto.payload,
-        }
-    }
-
-    pub fn to_proto(&self) -> ProtoMsg {
-        ProtoMsg {
-            payload: self.payload.clone(),
-        }
     }
 }

@@ -1,6 +1,8 @@
 mod broker;
 mod server;
 mod utils;
+mod topic;
+mod msg;
 
 use crate::server::start_server;
 use tracing_subscriber::FmtSubscriber;
