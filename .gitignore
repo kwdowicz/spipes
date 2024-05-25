@@ -6,7 +6,7 @@
 *.dylib
 *.bin
 broker_state.bin
-broker_services.rs
+/src/broker_services.rs
 
 # C extensions
 *.o
