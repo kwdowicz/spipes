@@ -1,5 +1,7 @@
 mod broker;
 mod server;
+mod utils;
+
 use crate::server::start_server;
 
 mod broker_service {

@@ -1,4 +1,5 @@
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
+use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
 use tonic::transport::Server;
 use crate::broker::Broker;
@@ -15,13 +16,13 @@ pub struct BrokerServiceImpl {
 
 #[tonic::async_trait]
 impl BrokerService for BrokerServiceImpl {
-    async fn create_topic(&self,request: Request<CreateTopicRequest>,) -> Result<Response<CreateTopicResponse>, Status> {
+    async fn create_topic(&self, request: Request<CreateTopicRequest>) -> Result<Response<CreateTopicResponse>, Status> {
         let req = request.into_inner();
-        let mut broker = self.broker.lock().unwrap();
+        let mut broker = self.broker.lock().await;
 
         match broker.create_topic(&req.name) {
             Ok(_) => {
-                broker.save_to_file(BROKER_STATE_FILE).unwrap();
+                broker.save_to_file(BROKER_STATE_FILE).await.unwrap();
                 Ok(Response::new(CreateTopicResponse {
                     message: format!("Topic '{}' created", req.name),
                 }))
@@ -30,18 +31,15 @@ impl BrokerService for BrokerServiceImpl {
         }
     }
 
-    async fn subscribe(&self,request: Request<SubscribeRequest>,) -> Result<Response<SubscribeResponse>, Status> {
+    async fn subscribe(&self, request: Request<SubscribeRequest>) -> Result<Response<SubscribeResponse>, Status> {
         let req = request.into_inner();
-        let mut broker = self.broker.lock().unwrap();
+        let mut broker = self.broker.lock().await;
 
         match broker.subscribe(&req.topic_name, &req.client_id) {
             Ok(_) => {
-                broker.save_to_file(BROKER_STATE_FILE).unwrap();
+                broker.save_to_file(BROKER_STATE_FILE).await.unwrap();
                 Ok(Response::new(SubscribeResponse {
-                    message: format!(
-                        "Client '{}' subscribed to '{}'",
-                        req.client_id, req.topic_name
-                    ),
+                    message: format!("Client '{}' subscribed to '{}'", req.client_id, req.topic_name),
                 }))
             }
             Err(e) => Err(Status::not_found(e.to_string())),
@@ -51,7 +49,7 @@ impl BrokerService for BrokerServiceImpl {
 
 pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     let addr = SERVER_ADDR.parse()?;
-    let broker = match Broker::load_from_file(BROKER_STATE_FILE) {
+    let broker = match Broker::load_from_file(BROKER_STATE_FILE).await {
         Ok(broker) => {
             println!("Broker: {:#?}", broker.clone());
             Arc::new(Mutex::new(broker))

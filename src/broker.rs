@@ -79,7 +79,7 @@ impl Broker {
         ProtoBroker { topics }
     }
 
-    pub fn save_to_file(&self, path: &str) -> Result<(), std::io::Error> {
+    pub async fn save_to_file(&self, path: &str) -> Result<(), std::io::Error> {
         let proto = self.to_proto();
         let mut buf = Vec::new();
         proto.encode(&mut buf).unwrap();
@@ -88,7 +88,7 @@ impl Broker {
         Ok(())
     }
 
-    pub fn load_from_file(path: &str) -> Result<Self, std::io::Error> {
+    pub async fn load_from_file(path: &str) -> Result<Self, std::io::Error> {
         let mut file = File::open(path)?;
         let mut buf = Vec::new();
         file.read_to_end(&mut buf)?;
