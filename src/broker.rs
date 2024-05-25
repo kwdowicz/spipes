@@ -28,7 +28,7 @@ impl Broker {
         }
     }
 
-    pub fn create_topic(&mut self, name: &str) -> Result<(), BrokerError> {
+    pub async fn create_topic(&mut self, name: &str) -> Result<(), BrokerError> {
         match self.topics.entry(name.to_string()) {
             Entry::Vacant(entry) => {
                 entry.insert(Topic::new(name));
@@ -38,7 +38,7 @@ impl Broker {
         }
     }
 
-    pub fn subscribe(&mut self, topic_name: &str, client_id: &str) -> Result<(), BrokerError> {
+    pub async fn subscribe(&mut self, topic_name: &str, client_id: &str) -> Result<(), BrokerError> {
         match self.topics.get_mut(topic_name) {
             Some(topic) => {
                 topic.subscribers.insert(client_id.to_string());
@@ -48,7 +48,7 @@ impl Broker {
         }
     }
 
-    pub fn unsubscribe(&mut self, topic_name: &str, client_id: &str) -> Result<(), BrokerError> {
+    pub async fn unsubscribe(&mut self, topic_name: &str, client_id: &str) -> Result<(), BrokerError> {
         match self.topics.get_mut(topic_name) {
             Some(topic) => {
                 topic.subscribers.remove(client_id);
@@ -58,7 +58,7 @@ impl Broker {
         }
     }
 
-    pub fn post(&mut self, topic_name: &str, payload: &str) -> Result<(), BrokerError> {
+    pub async fn post(&mut self, topic_name: &str, payload: &str) -> Result<(), BrokerError> {
         match self.topics.get_mut(topic_name) {
             Some(topic) => {
                 topic.msgs.push(Msg { payload: payload.to_string() });
@@ -103,7 +103,7 @@ impl Broker {
         Ok(Self::from_proto(proto))
     }
 
-    pub fn fetch(&self, client_id: &str) -> Vec<&Msg> {
+    pub async fn fetch(&self, client_id: &str) -> Vec<&Msg> {
         let subscribed_topics = self.topics.iter()
             .filter(|t| t.1.subscribers.contains(&client_id.to_string()));
 

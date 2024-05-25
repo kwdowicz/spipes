@@ -21,7 +21,7 @@ impl BrokerService for BrokerServiceImpl {
         let req = request.into_inner();
         let mut broker = self.broker.lock().await;
 
-        match broker.create_topic(&req.name) {
+        match broker.create_topic(&req.name).await {
             Ok(_) => {
                 broker.save_to_file(BROKER_STATE_FILE).await.unwrap();
                 Ok(Response::new(CreateTopicResponse {
@@ -36,7 +36,7 @@ impl BrokerService for BrokerServiceImpl {
         let req = request.into_inner();
         let mut broker = self.broker.lock().await;
 
-        match broker.subscribe(&req.topic_name, &req.client_id) {
+        match broker.subscribe(&req.topic_name, &req.client_id).await {
             Ok(_) => {
                 info!("Subscription: {:?}", &req);
                 broker.save_to_file(BROKER_STATE_FILE).await.unwrap();
@@ -52,7 +52,7 @@ impl BrokerService for BrokerServiceImpl {
         let req = request.into_inner();
         let mut broker = self.broker.lock().await;
 
-        match broker.unsubscribe(&req.topic_name, &req.client_id) {
+        match broker.unsubscribe(&req.topic_name, &req.client_id).await {
             Ok(_) => {
                 info!("Unsubscription: {:?}", &req);
                 broker.save_to_file(BROKER_STATE_FILE).await.unwrap();
@@ -68,7 +68,7 @@ impl BrokerService for BrokerServiceImpl {
         let req = request.into_inner();
         let mut broker = self.broker.lock().await;
 
-        match broker.post(&req.topic_name, &req.payload) {
+        match broker.post(&req.topic_name, &req.payload).await {
             Ok(_) => {
                 info!("Post: {:?}", &req);
                 broker.save_to_file(BROKER_STATE_FILE).await.unwrap();
@@ -85,7 +85,7 @@ impl BrokerService for BrokerServiceImpl {
     async fn fetch(&self, request: Request<FetchRequest>) -> Result<Response<FetchResponse>, Status> {
         let req = request.into_inner();
         let mut broker = self.broker.lock().await;
-        let msgs = broker.fetch(&req.client_id);
+        let msgs = broker.fetch(&req.client_id).await;
         let mut proto_msgs = vec![];
         for m in msgs {
             proto_msgs.push(m.to_proto());
