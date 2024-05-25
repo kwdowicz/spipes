@@ -5,6 +5,8 @@
 *.so
 *.dylib
 *.bin
+broker_state.bin
+broker_services.rs
 
 # C extensions
 *.o

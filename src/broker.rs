@@ -1,12 +1,8 @@
-mod broker_service {
-    tonic::include_proto!("broker_service");
-}
-
 use crate::broker_service::ProtoBroker;
 use crate::topic::Topic;
 use crate::msg::Msg;
 use std::collections::hash_map::Entry;
-use std::collections::{HashMap, HashSet};
+use std::collections::{HashMap};
 use thiserror::Error;
 use prost::Message;
 use std::fs::File;

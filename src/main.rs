@@ -3,15 +3,11 @@ mod server;
 mod utils;
 mod topic;
 mod msg;
+mod broker_service;
 
 use crate::server::start_server;
 use tracing_subscriber::FmtSubscriber;
-use tracing_appender::rolling::{RollingFileAppender, Rotation};
-
-
-mod broker_service {
-    tonic::include_proto!("broker_service");
-}
+//use tracing_appender::rolling::{RollingFileAppender, Rotation};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

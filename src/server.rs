@@ -3,9 +3,9 @@ use tokio::sync::Mutex;
 use tonic::{Request, Response, Status};
 use tonic::transport::Server;
 use crate::broker::Broker;
-use crate::broker_service::broker_service_server::{BrokerService, BrokerServiceServer};
 use crate::broker_service::{CreateTopicRequest, CreateTopicResponse, SubscribeRequest, SubscribeResponse, UnsubscribeRequest, UnsubscribeResponse, PostRequest, PostResponse};
-use tracing::{info, error};
+use crate::broker_service::broker_service_server::{BrokerService, BrokerServiceServer};
+use tracing::{info};
 
 const BROKER_STATE_FILE: &str = "broker_state.bin";
 const SERVER_ADDR: &str = "127.0.0.1:5005";

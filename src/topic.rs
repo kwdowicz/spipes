@@ -1,10 +1,8 @@
-use std::collections::HashSet;
-use crate::msg::Msg;
 use crate::broker_service::ProtoTopic;
 
-mod broker_service {
-    tonic::include_proto!("broker_service");
-}
+use std::collections::HashSet;
+use crate::msg::Msg;
+
 
 #[derive(Debug, Clone)]
 pub struct Topic {

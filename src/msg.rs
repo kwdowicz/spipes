@@ -1,6 +1,3 @@
-mod broker_service {
-    tonic::include_proto!("broker_service");
-}
 use crate::broker_service::ProtoMsg;
 
 #[derive(Debug, Clone)]
