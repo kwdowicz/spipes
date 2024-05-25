@@ -1,9 +1,9 @@
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use tonic::{Request, Response, Status};
+use tonic::{Code, Request, Response, Status};
 use tonic::transport::Server;
 use crate::broker::Broker;
-use crate::broker_service::{CreateTopicRequest, CreateTopicResponse, SubscribeRequest, SubscribeResponse, UnsubscribeRequest, UnsubscribeResponse, PostRequest, PostResponse};
+use crate::broker_service::{CreateTopicRequest, CreateTopicResponse, SubscribeRequest, SubscribeResponse, UnsubscribeRequest, UnsubscribeResponse, PostRequest, PostResponse, FetchRequest, FetchResponse};
 use crate::broker_service::broker_service_server::{BrokerService, BrokerServiceServer};
 use tracing::{info};
 
@@ -78,6 +78,21 @@ impl BrokerService for BrokerServiceImpl {
             }
             Err(e) => Err(Status::not_found(e.to_string())),
         }
+    }
+
+    // So we are sending always a vector, even if all the request is wrong
+    // think about it once more...
+    async fn fetch(&self, request: Request<FetchRequest>) -> Result<Response<FetchResponse>, Status> {
+        let req = request.into_inner();
+        let mut broker = self.broker.lock().await;
+        let msgs = broker.fetch(&req.client_id);
+        let mut proto_msgs = vec![];
+        for m in msgs {
+            proto_msgs.push(m.to_proto());
+        }
+        Ok(Response::new(FetchResponse {
+            msgs: proto_msgs,
+        }))
     }
 }
 

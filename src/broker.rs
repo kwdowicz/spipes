@@ -102,4 +102,16 @@ impl Broker {
         let proto = ProtoBroker::decode(&buf[..]).unwrap();
         Ok(Self::from_proto(proto))
     }
+
+    pub fn fetch(&self, client_id: &str) -> Vec<&Msg> {
+        let subscribed_topics = self.topics.iter()
+            .filter(|t| t.1.subscribers.contains(&client_id.to_string()));
+
+        let msgs: Vec<&Msg> = subscribed_topics
+            .flat_map(|(_key, topic)| topic.msgs.iter())
+            .collect();
+
+        msgs
+    }
+
 }
