@@ -5,6 +5,7 @@ use tonic::transport::Server;
 use crate::broker::Broker;
 use crate::broker_service::broker_service_server::{BrokerService, BrokerServiceServer};
 use crate::broker_service::{CreateTopicRequest, CreateTopicResponse, SubscribeRequest, SubscribeResponse};
+use tracing::{info, error};
 
 const BROKER_STATE_FILE: &str = "broker_state.bin";
 const SERVER_ADDR: &str = "127.0.0.1:5005";
@@ -37,6 +38,7 @@ impl BrokerService for BrokerServiceImpl {
 
         match broker.subscribe(&req.topic_name, &req.client_id) {
             Ok(_) => {
+                info!("Subscription: {:?}", &req);
                 broker.save_to_file(BROKER_STATE_FILE).await.unwrap();
                 Ok(Response::new(SubscribeResponse {
                     message: format!("Client '{}' subscribed to '{}'", req.client_id, req.topic_name),
@@ -58,7 +60,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     };
     let broker_service = BrokerServiceImpl { broker };
 
-    println!("Listening on {}", addr);
+    info!("Server started. Listening on {}", addr);
 
     Server::builder()
         .add_service(BrokerServiceServer::new(broker_service))

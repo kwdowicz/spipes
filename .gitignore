@@ -63,7 +63,7 @@ ehthumbs.db
 Desktop.ini
 
 # Logs
-*.log
+*.log.*
 
 # Temporary files
 *.tmp
@@ -78,3 +78,4 @@ Desktop.ini
 
 # Rust standard library
 /vendor/
+/logs/
