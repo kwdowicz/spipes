@@ -44,6 +44,8 @@ pub struct UnsubscribeResponse {
 pub struct ProtoMsg {
     #[prost(string, tag = "1")]
     pub payload: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub id: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -58,8 +60,19 @@ pub struct ProtoTopic {
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ProtoBroker {
-    #[prost(message, repeated, tag = "1")]
-    pub topics: ::prost::alloc::vec::Vec<ProtoTopic>,
+    #[prost(map = "string, message", tag = "1")]
+    pub topics: ::std::collections::HashMap<::prost::alloc::string::String, ProtoTopic>,
+    #[prost(map = "string, message", tag = "2")]
+    pub acked_msgs: ::std::collections::HashMap<
+        ::prost::alloc::string::String,
+        ProtoAckedMsgs,
+    >,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ProtoAckedMsgs {
+    #[prost(string, repeated, tag = "1")]
+    pub messages: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -86,6 +99,20 @@ pub struct FetchRequest {
 pub struct FetchResponse {
     #[prost(message, repeated, tag = "1")]
     pub msgs: ::prost::alloc::vec::Vec<ProtoMsg>,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AckRequest {
+    #[prost(string, tag = "1")]
+    pub msg_id: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub client_id: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AckResponse {
+    #[prost(string, tag = "1")]
+    pub message: ::prost::alloc::string::String,
 }
 /// Generated client implementations.
 pub mod broker_service_client {
@@ -291,6 +318,28 @@ pub mod broker_service_client {
                 .insert(GrpcMethod::new("broker_service.BrokerService", "Fetch"));
             self.inner.unary(req, path, codec).await
         }
+        pub async fn ack(
+            &mut self,
+            request: impl tonic::IntoRequest<super::AckRequest>,
+        ) -> std::result::Result<tonic::Response<super::AckResponse>, tonic::Status> {
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::new(
+                        tonic::Code::Unknown,
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/broker_service.BrokerService/Ack",
+            );
+            let mut req = request.into_request();
+            req.extensions_mut()
+                .insert(GrpcMethod::new("broker_service.BrokerService", "Ack"));
+            self.inner.unary(req, path, codec).await
+        }
     }
 }
 /// Generated server implementations.
@@ -329,6 +378,10 @@ pub mod broker_service_server {
             &self,
             request: tonic::Request<super::FetchRequest>,
         ) -> std::result::Result<tonic::Response<super::FetchResponse>, tonic::Status>;
+        async fn ack(
+            &self,
+            request: tonic::Request<super::AckRequest>,
+        ) -> std::result::Result<tonic::Response<super::AckResponse>, tonic::Status>;
     }
     #[derive(Debug)]
     pub struct BrokerServiceServer<T: BrokerService> {
@@ -622,6 +675,50 @@ pub mod broker_service_server {
                     let fut = async move {
                         let inner = inner.0;
                         let method = FetchSvc(inner);
+                        let codec = tonic::codec::ProstCodec::default();
+                        let mut grpc = tonic::server::Grpc::new(codec)
+                            .apply_compression_config(
+                                accept_compression_encodings,
+                                send_compression_encodings,
+                            )
+                            .apply_max_message_size_config(
+                                max_decoding_message_size,
+                                max_encoding_message_size,
+                            );
+                        let res = grpc.unary(method, req).await;
+                        Ok(res)
+                    };
+                    Box::pin(fut)
+                }
+                "/broker_service.BrokerService/Ack" => {
+                    #[allow(non_camel_case_types)]
+                    struct AckSvc<T: BrokerService>(pub Arc<T>);
+                    impl<T: BrokerService> tonic::server::UnaryService<super::AckRequest>
+                    for AckSvc<T> {
+                        type Response = super::AckResponse;
+                        type Future = BoxFuture<
+                            tonic::Response<Self::Response>,
+                            tonic::Status,
+                        >;
+                        fn call(
+                            &mut self,
+                            request: tonic::Request<super::AckRequest>,
+                        ) -> Self::Future {
+                            let inner = Arc::clone(&self.0);
+                            let fut = async move {
+                                <T as BrokerService>::ack(&inner, request).await
+                            };
+                            Box::pin(fut)
+                        }
+                    }
+                    let accept_compression_encodings = self.accept_compression_encodings;
+                    let send_compression_encodings = self.send_compression_encodings;
+                    let max_decoding_message_size = self.max_decoding_message_size;
+                    let max_encoding_message_size = self.max_encoding_message_size;
+                    let inner = self.inner.clone();
+                    let fut = async move {
+                        let inner = inner.0;
+                        let method = AckSvc(inner);
                         let codec = tonic::codec::ProstCodec::default();
                         let mut grpc = tonic::server::Grpc::new(codec)
                             .apply_compression_config(

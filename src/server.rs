@@ -1,9 +1,10 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 use tonic::{Code, Request, Response, Status};
 use tonic::transport::Server;
-use crate::broker::Broker;
-use crate::broker_service::{CreateTopicRequest, CreateTopicResponse, SubscribeRequest, SubscribeResponse, UnsubscribeRequest, UnsubscribeResponse, PostRequest, PostResponse, FetchRequest, FetchResponse};
+use crate::broker::{Broker, BrokerError};
+use crate::broker_service::{CreateTopicRequest, CreateTopicResponse, SubscribeRequest, SubscribeResponse, UnsubscribeRequest, UnsubscribeResponse, PostRequest, PostResponse, FetchRequest, FetchResponse, AckRequest, AckResponse};
 use crate::broker_service::broker_service_server::{BrokerService, BrokerServiceServer};
 use tracing::{info};
 
@@ -80,7 +81,7 @@ impl BrokerService for BrokerServiceImpl {
         }
     }
 
-    // So we are sending always a vector, even if all the request is wrong
+    // TODO: So we are sending always a vector, even if all the request is wrong
     // think about it once more...
     async fn fetch(&self, request: Request<FetchRequest>) -> Result<Response<FetchResponse>, Status> {
         let req = request.into_inner();
@@ -93,6 +94,18 @@ impl BrokerService for BrokerServiceImpl {
         Ok(Response::new(FetchResponse {
             msgs: proto_msgs,
         }))
+    }
+
+    async fn ack(&self, request: Request<AckRequest>) -> Result<Response<AckResponse>, Status> {
+        let req = request.into_inner();
+        let mut broker = self.broker.lock().await;
+        match broker.ack(&req.msg_id, &req.client_id).await {
+            Ok(_) => {
+                broker.save_to_file(BROKER_STATE_FILE).await.unwrap();
+                Ok(Response::new(AckResponse { message: "Ok".to_string(), }))
+            },
+            Err(e) => Err(Status::not_found(e.to_string())),
+        }
     }
 }
 

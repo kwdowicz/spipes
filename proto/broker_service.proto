@@ -8,6 +8,7 @@ service BrokerService {
     rpc Unsubscribe (UnsubscribeRequest) returns (UnsubscribeResponse);
     rpc Post (PostRequest) returns (PostResponse);
     rpc Fetch (FetchRequest) returns (FetchResponse);
+    rpc Ack (AckRequest) returns (AckResponse);
 }
 
 message CreateTopicRequest {
@@ -38,6 +39,7 @@ message UnsubscribeResponse {
 
 message ProtoMsg {
     string payload = 1;
+    string id = 2;
 }
 
 message ProtoTopic {
@@ -47,7 +49,12 @@ message ProtoTopic {
 }
 
 message ProtoBroker {
-    repeated ProtoTopic topics = 1;
+    map<string, ProtoTopic> topics = 1;
+    map<string, ProtoAckedMsgs> acked_msgs = 2;
+}
+
+message ProtoAckedMsgs {
+    repeated string messages = 1;
 }
 
 message PostRequest {
@@ -65,4 +72,13 @@ message FetchRequest {
 
 message FetchResponse {
     repeated ProtoMsg msgs = 1;
+}
+
+message AckRequest {
+    string msg_id = 1;
+    string client_id = 2;
+}
+
+message AckResponse {
+    string message = 1;
 }
