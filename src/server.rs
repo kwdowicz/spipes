@@ -101,7 +101,10 @@ impl BrokerService for BrokerServiceImpl {
         let mut broker = self.broker.lock().await;
         match broker.ack(&req.msg_id, &req.client_id).await {
             Ok(_) => {
-                broker.save_to_file(BROKER_STATE_FILE).await.unwrap();
+                match broker.save_to_file(BROKER_STATE_FILE).await {
+                    Ok(x) => x,
+                    Err(_) => todo!(),
+                };
                 Ok(Response::new(AckResponse { message: "Ok".to_string(), }))
             },
             Err(e) => Err(Status::not_found(e.to_string())),
@@ -113,7 +116,7 @@ pub async fn start_server() -> Result<(), Box<dyn std::error::Error>> {
     let addr = SERVER_ADDR.parse()?;
     let broker = match Broker::load_from_file(BROKER_STATE_FILE).await {
         Ok(broker) => {
-            println!("Broker: {:#?}", broker.clone());
+            info!("{:#?}", broker.clone());
             Arc::new(Mutex::new(broker))
         },
         Err(_) => Arc::new(Mutex::new(Broker::new())),

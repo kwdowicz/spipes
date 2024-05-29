@@ -77,20 +77,6 @@ impl Broker {
         }
     }
 
-    // pub async fn ack(&mut self, msg_id: &str, client_id: &str) -> Result<(), BrokerError> {
-    //     match self.acked_msgs.entry(msg_id.to_string()) {
-    //         Entry::Vacant(_) => {
-    //             info!("no message in acked");
-    //             Err(BrokerError::MessageNotFound(msg_id.to_string()))
-    //         },
-    //         Entry::Occupied(mut entry) => {
-    //             entry.get_mut().insert(client_id.to_string());
-    //             info!("entry: {:#?}", entry.get_mut());
-    //             Ok(())
-    //         }
-    //     }
-    // }
-
     pub async fn ack(&mut self, msg_id: &str, client_id: &str) -> Result<(), BrokerError> {
         match self.acked_msgs.get_mut(msg_id) {
             None => Err(BrokerError::MessageNotFound(msg_id.to_string())),
